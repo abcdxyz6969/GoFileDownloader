@@ -4,9 +4,8 @@ It uses the Rich library to create dynamic, formatted progress bars and tables f
 monitoring task completion.
 """
 
-from __future__ import annotations
-
 import shutil
+from typing import List, Optional, Union
 
 from rich.panel import Panel
 from rich.progress import (
@@ -32,18 +31,21 @@ class ProgressManager:
         self,
         task_name: str,
         item_description: str,
-    ) -> None:
+    ):
+        # type: (...) -> None
         """Initialize a progress tracking system for a specific task."""
         self.config = ProgressConfig(task_name, item_description)
         self.overall_progress = create_progress_bar()
         self.task_progress = create_progress_bar(show_time=True)
         self.num_tasks = 0
 
-    def get_panel_width(self) -> int:
+    def get_panel_width(self):
+        # type: () -> int
         """Return the width of the panel."""
         return self.config.panel_width
 
-    def add_overall_task(self, description: str, num_tasks: int) -> None:
+    def add_overall_task(self, description, num_tasks):
+        # type: (str, int) -> None
         """Add an overall progress task with a given description and total tasks."""
         self.num_tasks = num_tasks
         overall_description = adjust_description(description)
@@ -53,7 +55,8 @@ class ProgressManager:
             completed=0,
         )
 
-    def add_task(self, current_task: int = 0, total: int = 100) -> int:
+    def add_task(self, current_task=0, total=100):
+        # type: (int, int) -> int
         """Add an individual task to the task progress bar."""
         task_description = (
             f"[{self.config.color}]{self.config.item_description} "
@@ -63,12 +66,12 @@ class ProgressManager:
 
     def update_task(
         self,
-        task_id: int,
-        completed: int | None = None,
-        advance: int = 0,
-        *,
-        visible: bool = True,
-    ) -> None:
+        task_id,
+        completed=None,
+        advance=0,
+        visible=True,
+    ):
+        # type: (int, Optional[int], int, bool) -> None
         """Update the progress of an individual task and the overall progress."""
         self.task_progress.update(
             task_id,
@@ -78,7 +81,8 @@ class ProgressManager:
         )
         self._update_overall_task(task_id)
 
-    def create_progress_table(self, min_panel_width: int = 30) -> Table:
+    def create_progress_table(self, min_panel_width=30):
+        # type: (int) -> Table
         """Create a formatted progress table for tracking the download."""
         terminal_width, _ = shutil.get_terminal_size()
         panel_width = max(min_panel_width, terminal_width // 2)
@@ -103,7 +107,8 @@ class ProgressManager:
         return progress_table
 
     # Private methods
-    def _update_overall_task(self, task_id: int) -> None:
+    def _update_overall_task(self, task_id):
+        # type: (int) -> None
         """Advance the overall progress when a task is finished and remove old tasks."""
         # Access the latest task dynamically
         current_overall_task = self.overall_progress.tasks[-1]
@@ -120,14 +125,16 @@ class ProgressManager:
         # Cleanup completed overall tasks
         self._cleanup_completed_overall_tasks()
 
-    def _cleanup_completed_overall_tasks(self) -> None:
+    def _cleanup_completed_overall_tasks(self):
+        # type: () -> None
         """Remove the oldest completed overall task from the buffer."""
         if len(self.config.overall_buffer) == self.config.overall_buffer.maxlen:
             completed_overall_id = self.config.overall_buffer.popleft().id
             self.overall_progress.remove_task(completed_overall_id)
 
 
-def adjust_description(description: str, max_length: int = 8) -> str:
+def adjust_description(description, max_length=8):
+    # type: (str, int) -> str
     """Truncate a string to a specified maximum length, adding an ellipsis."""
     return (
         description[:max_length] + "..."
@@ -136,11 +143,8 @@ def adjust_description(description: str, max_length: int = 8) -> str:
     )
 
 
-def create_progress_bar(
-    columns: list[Column | str] | None = None,
-    *,
-    show_time: bool = False,
-) -> Progress:
+def create_progress_bar(columns=None, show_time=False):
+    # type: (Optional[List[Union[Column, str]]], bool) -> Progress
     """Create a progress bar for tracking download progress."""
     if columns is None:
         columns = [
