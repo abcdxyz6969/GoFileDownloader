@@ -5,10 +5,9 @@ dynamic updates of both tables. The `LiveManager` class handles the integration 
 refresh of the live view.
 """
 
-from __future__ import annotations
-
 import datetime
 import time
+from typing import Optional
 
 from rich.align import Align
 from rich.console import Group
@@ -58,7 +57,7 @@ class LiveManager:
     def update_task(
         self,
         task_id: int,
-        completed: int | None = None,
+        completed: Optional[int] = None,
         advance: int = 0,
         *,
         visible: bool = True,
