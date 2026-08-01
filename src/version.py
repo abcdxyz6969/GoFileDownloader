@@ -4,7 +4,13 @@ This module defines structured version metadata and exposes a unified version st
 used across the application.
 """
 
-from typing import Literal, NamedTuple
+from typing import NamedTuple
+
+try:
+    from typing import Literal
+except ImportError:
+    # For Python < 3.8 compatibility
+    from typing_extensions import Literal  # type: ignore
 
 
 class VersionInfo(NamedTuple):
