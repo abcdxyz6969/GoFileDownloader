@@ -5,11 +5,12 @@ optional support for clearing the file.
 """
 
 from pathlib import Path
+from typing import List
 
 from .config import SESSION_LOG
 
 
-def read_file(filename: str) -> list[str]:
+def read_file(filename: str) -> List[str]:
     """Read the contents of a file and returns a list of its lines."""
     with Path(filename).open(encoding="utf-8") as file:
         return file.read().splitlines()
