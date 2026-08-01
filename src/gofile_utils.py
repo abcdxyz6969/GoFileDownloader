@@ -1,11 +1,10 @@
 """Module that provides utility functions for interacting with the GoFile API."""
 
-from __future__ import annotations
-
 import logging
 import sys
 from hashlib import sha256
 from time import time
+from typing import Optional
 from urllib.parse import urlencode
 
 import requests
@@ -22,7 +21,7 @@ from .config import (
 )
 
 
-def get_content_id(url: str) -> str | None:
+def get_content_id(url: str) -> Optional[str]:
     """Extract and returns the content ID from a GoFile URL."""
     try:
         if url.rstrip("/").split("/")[-2] != "d":
@@ -38,7 +37,7 @@ def get_content_id(url: str) -> str | None:
         return None
 
 
-def generate_content_url(content_id: str, password: str | None = None) -> None:
+def generate_content_url(content_id: str, password: Optional[str] = None) -> str:
     """Generate a URL for accessing content, optionally including a password."""
     base_url = (
         f"{GOFILE_API}/contents/{content_id}"
@@ -75,7 +74,7 @@ def check_response_status(response: requests.Response, filename: str) -> bool:
 
     if response_is_invalid:
         message = (
-            f"Invalid response for {filename}. Status code: {{response.status_code}}"
+            f"Invalid response for {filename}. Status code: {response.status_code}"
         )
         logging.error(message)
         return False
