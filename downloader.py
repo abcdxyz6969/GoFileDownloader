@@ -11,7 +11,7 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Set
 
 import requests
 
@@ -40,6 +40,20 @@ if TYPE_CHECKING:
     from argparse import Namespace
 
 DEFAULT_DOWNLOAD_PATH = Path.cwd() / DOWNLOAD_FOLDER
+
+
+def get_existing_files(directory: Path) -> Set[str]:
+    """Recursively scan directory and return set of all file names."""
+    existing_files = set()
+    
+    if not directory.exists():
+        return existing_files
+    
+    for item in directory.rglob("*"):
+        if item.is_file():
+            existing_files.add(item.name)
+    
+    return existing_files
 
 
 class Downloader:
@@ -78,7 +92,7 @@ class Downloader:
         download_link = file_info["download_link"]
 
         # Skip file if it already exists and is not empty
-        if Path(final_path).exists():
+        if Path(final_path).exists() and Path(final_path).stat().st_size > 0:
             self.live_manager.update_log(
                 event="Skipped download",
                 details=f"{filename} has already been downloaded.",
@@ -143,8 +157,11 @@ class Downloader:
         identifier: str,
         files_info: list,
         password: Optional[str] = None,
+        existing_files: Optional[Set[str]] = None,
     ) -> None:
         """Parse the URL for file links and populates a list with file information."""
+        if existing_files is None:
+            existing_files = set()
 
         def append_file_info(files_info: list, data: dict) -> None:
             files_info.append(
@@ -189,33 +206,53 @@ class Downloader:
                 child = data["children"][child_id]
 
                 if child["type"] == "folder":
-                    self.parse_links(child["id"], files_info, password)
+                    self.parse_links(child["id"], files_info, password, existing_files)
                 else:
-                    append_file_info(files_info, child)
+                    # Only add file if it doesn't exist
+                    if child["name"] not in existing_files:
+                        append_file_info(files_info, child)
 
             os.chdir(os.path.pardir)
 
         # Handle file
         else:
-            append_file_info(files_info, data)
+            # Only add file if it doesn't exist
+            if data["name"] not in existing_files:
+                append_file_info(files_info, data)
 
     def initialize_download(self) -> None:
         """Initialize the download process."""
         content_id = get_content_id(self.url)
+        
+        # Check if content_id is valid
+        if content_id is None:
+            self.live_manager.update_log(
+                event="Invalid URL",
+                details="Please provide a valid GoFile URL in the format: https://gofile.io/d/<CONTENT_ID>",
+            )
+            return
+        
         content_directory = self.download_path / content_id
         create_download_directory(content_directory)
 
+        # Get existing files in the download directory
+        existing_files = get_existing_files(self.download_path)
+        
         files_info = []
         hashed_password = (
             hashlib.sha256(self.password.encode()).hexdigest()
             if self.password
             else self.password
         )
-        self.parse_links(content_id, files_info, hashed_password)
+        self.parse_links(content_id, files_info, hashed_password, existing_files)
 
         # Remove the root content directory if there's no file or subdirectory.
         if not os.listdir(content_directory) and not files_info:
             Path(content_directory).rmdir()
+            self.live_manager.update_log(
+                event="All files already downloaded",
+                details="All files in this album have already been downloaded.",
+            )
             return
 
         self.live_manager.add_overall_task(
