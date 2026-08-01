@@ -64,7 +64,7 @@ LOG_MANAGER_CONFIG = {
 # ============================
 # Download Settings
 # ============================
-MAX_WORKERS = 3  # The maximum number of threads for concurrent downloads.
+MAX_WORKERS = 6  # The maximum number of threads for concurrent downloads.
 
 # Constants for file sizes, expressed in bytes.
 KB = 1024
