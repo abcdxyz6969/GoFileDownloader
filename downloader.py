@@ -5,15 +5,13 @@ Example usage:
     python3 gofile_downloader.py <album_url> <password>
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import requests
 
@@ -56,7 +54,7 @@ class Downloader:
         self,
         url: str,
         live_manager: LiveManager,
-        args: Namespace | None = None,
+        args: Optional["Namespace"] = None,
     ) -> None:
         """Initialize the downloader with the given parameters."""
         self.url = url
@@ -73,7 +71,7 @@ class Downloader:
         self.download_path.mkdir(parents=True, exist_ok=True)
         os.chdir(self.download_path)
 
-    def download_item(self, current_task: int, file_info: tuple) -> None:
+    def download_item(self, current_task: int, file_info: dict) -> None:
         """Download a single file."""
         filename = file_info["filename"]
         final_path = Path(file_info["download_path"]) / filename
@@ -102,7 +100,7 @@ class Downloader:
             task_id = self.live_manager.add_task(current_task=current_task)
             save_file_with_progress(response, final_path, task_id, self.live_manager)
 
-    def run_in_parallel(self, content_directory: str, files_info: tuple) -> None:
+    def run_in_parallel(self, content_directory: str, files_info: list) -> None:
         """Execute the file downloads in parallel."""
         os.chdir(content_directory)
 
@@ -114,7 +112,7 @@ class Downloader:
 
     def _prepare_headers(
         self,
-        url: str | None = None,
+        url: Optional[str] = None,
         *,
         include_auth: bool = False,
     ) -> dict:
@@ -143,12 +141,12 @@ class Downloader:
     def parse_links(
         self,
         identifier: str,
-        files_info: tuple,
-        password: str | None = None,
+        files_info: list,
+        password: Optional[str] = None,
     ) -> None:
         """Parse the URL for file links and populates a list with file information."""
 
-        def append_file_info(files_info: tuple, data: dict) -> None:
+        def append_file_info(files_info: list, data: dict) -> None:
             files_info.append(
                 {
                     "download_path": str(Path.cwd()),
@@ -230,7 +228,7 @@ class Downloader:
 def handle_download_process(
     url: str,
     live_manager: LiveManager,
-    args: Namespace | None = None,
+    args: Optional["Namespace"] = None,
 ) -> None:
     """Handle the process of downloading content from a specified URL."""
     if url is None:
